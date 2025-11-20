@@ -124,7 +124,7 @@ The service will run on `http://localhost:8080/dav`.
 - Username: `user`
 - Password: `123123123`
 
-**WebDAV Root Directory:** `~/dav/`
+**WebDAV Root Directory:** `~/webdav/`
 
 ### Testing with curl
 
