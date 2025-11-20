@@ -282,7 +282,7 @@ webdav/
 1. Make sure the Caddy WebDAV service is started before running the client
 2. Modify the URL, username, and password in `main.cljd` to match your Caddy configuration
 3. All file operations are asynchronous and require using `.then` and `.catchError` to handle results
-4. The WebDAV root directory defaults to `~/dav/`, ensure this directory exists and has write permissions
+4. The WebDAV root directory defaults to `~/webdav/`, ensure this directory exists and has write permissions
 
 ## License
 
