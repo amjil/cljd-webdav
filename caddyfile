@@ -1,0 +1,14 @@
+:8080 {
+	route /dav/* {
+
+		basicauth {
+			user $2a$14$ClNTzReiTOCTrlb1KR08KugifBSgpls3qqFkLd56cpCL0rdDOdxY.
+		}
+
+		webdav {
+			root ~/webdav/
+		}
+
+	}
+	
+}
