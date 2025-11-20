@@ -1,0 +1,46 @@
+(ns webdav.main
+  (:require
+   ["package:flutter/material.dart" :as m]
+   [cljd.flutter :as f]
+   [webdav.client :as client]
+   [webdav.http :as http]))
+
+(defn main []
+  ;; Ensure Flutter binding is initialized
+  (m.WidgetsFlutterBinding/ensureInitialized)
+
+  (let [client (client/create-client "http://localhost:8080/dav" "user" "123123123")]
+    ;; (-> (client/list-dir client "/")
+    ;;  (.then (fn [x] (dart:core/print x))))
+    ;; (-> (client/upload-file client "Hello, World!" "/test1.txt")
+    ;;     (.then (fn [x] (dart:core/print x)))
+    ;;     (.catchError (fn [error]
+    ;;                    (dart:core/print (http/format-error-message (str error) "/test1.txt")))))
+    ;; (-> (client/download-file client "/test.txt")
+    ;;     (.then (fn [x] (dart:core/print x))))
+    (-> (client/delete-file client "/test1.txt")
+        (.then (fn [_] 
+                 (dart:core/print "File deleted successfully")))
+        (.catchError (fn [error]
+                       (dart:core/print (http/format-error-message (str error) "/test1.txt")))))
+                       
+    )
+
+    ;; Start Flutter application
+    (f/run
+     (f/widget
+      (m/MaterialApp
+       .title "- - -"
+       .debugShowCheckedModeBanner false
+       .home
+       (m/Scaffold
+        ;;  .appBar (m/AppBar
+        ;;           .title (m/Text "Mongolian Search Bar"))
+        .body
+        (f/widget
+         (m/Center
+          .child (m/Text
+                  " abc that for u"
+                  .style (m/TextStyle
+                          .color m.Colors/blue)))))))))
+    

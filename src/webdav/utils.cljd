@@ -1,0 +1,35 @@
+(ns webdav.utils
+  (:require ["package:xml/xml.dart" :as xml]))
+
+;; Recursively find all elements with the specified local name
+(defn find-elements-recursive [element local-name]
+  (if (not (instance? xml/XmlElement element))
+    []
+    (let [children (.-children element)
+          ;; Only process child nodes of type XmlElement
+          element-children (filter (fn [c] (instance? xml/XmlElement c)) children)
+          direct-matches (filter (fn [c] (= (.-localName c) local-name)) element-children)
+          nested-matches (mapcat (fn [c] (find-elements-recursive c local-name)) element-children)
+          all-matches (concat direct-matches nested-matches)]
+      (vec all-matches))))
+
+(defn parse-propfind [xml-string]
+  (when (and xml-string (not= xml-string ""))
+    (try
+      (let [doc (xml/XmlDocument.parse xml-string)
+            root (.-rootElement doc)
+            responses (find-elements-recursive root "response")]
+        (if (seq responses)
+          (vec (map (fn [resp]
+                      (let [href-elem (first (find-elements-recursive resp "href"))
+                            collection-elem (first (find-elements-recursive resp "collection"))
+                            length-elem (first (find-elements-recursive resp "getcontentlength"))]
+                        {:href (when href-elem (.-text href-elem))
+                         :is-dir (boolean collection-elem)
+                         :length (when length-elem (.-text length-elem))}))
+                    responses))
+          []))
+      (catch Exception e
+        (dart:core/print (str "XML parsing error: " e))
+        (dart:core/print (str "XML content: " xml-string))
+        []))))

@@ -1,0 +1,81 @@
+(ns webdav.client
+  (:require [webdav.http :as http]
+            [webdav.utils :as utils]))
+
+
+(defrecord WebdavClient [base-url username password])
+
+(defn create-client [base-url username password]
+  (->WebdavClient base-url username password))
+
+
+;; -------------------------
+;; 1. List directory (PROPFIND)
+;; -------------------------
+(def propfind-body
+  "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
+<propfind xmlns=\"DAV:\">
+  <prop>
+    <resourcetype/>
+    <getcontentlength/>
+    <displayname/>
+  </prop>
+</propfind>")
+
+(defn list-dir [client path]
+  (let [{:keys [base-url username password]} client
+        url (str base-url path)]
+    (-> (http/send-request
+          {:method "PROPFIND"
+           :url url
+           :depth "1"
+           :user username
+           :pass password
+           :body propfind-body
+           :headers {"Content-Type" "application/xml; charset=utf-8"}})
+        (.then utils/parse-propfind))))
+
+;; -------------------------
+;; 2. Upload file (PUT)
+;; -------------------------
+(defn upload-file [client local-content remote-path]
+  (let [{:keys [base-url username password]} client]
+    (http/send-request
+      {:method "PUT"
+       :url (str base-url remote-path)
+       :user username
+       :pass password
+       :body local-content})))
+
+;; -------------------------
+;; 3. Download file (GET)
+;; -------------------------
+(defn download-file [client remote-path]
+  (let [{:keys [base-url username password]} client]
+    (http/send-request
+      {:method "GET"
+       :url (str base-url remote-path)
+       :user username
+       :pass password})))
+
+;; -------------------------
+;; 4. Delete file (DELETE)
+;; -------------------------
+(defn delete-file [client remote-path]
+  (let [{:keys [base-url username password]} client]
+    (http/send-request
+      {:method "DELETE"
+       :url (str base-url remote-path)
+       :user username
+       :pass password})))
+
+;; -------------------------
+;; 5. Create directory (MKCOL)
+;; -------------------------
+(defn make-dir [client remote-path]
+  (let [{:keys [base-url username password]} client]
+    (http/send-request
+      {:method "MKCOL"
+       :url (str base-url remote-path)
+       :user username
+       :pass password})))

@@ -1,0 +1,60 @@
+(ns webdav.http
+  (:require 
+   ["dart:convert" :as convert]
+   ["dart:core" :as dart]
+   ["package:http/http.dart" :as http]))
+
+(defn basic-auth-headers
+  ([username password]
+   (basic-auth-headers username password 0))
+  ([username password depth]
+   {"Authorization"
+    (str
+     "Basic "
+     (convert/base64Encode (convert/utf8.encode (str username ":" password))))
+    "Depth" (str depth)}))
+
+(defn format-error-message [error-msg context]
+  (let [match (re-find #"HTTP error: (\d+)" error-msg)
+        status-code (when match
+                      (second match))]
+    (cond
+      (= status-code "404")
+      (str "Error: File not found. " 
+           (if context 
+             (str "The file '" context "' does not exist on the server.")
+             "The requested resource does not exist on the server."))
+      
+      (= status-code "403")
+      (str "Error: Permission denied. " 
+           (if context 
+             (str "You don't have permission to access '" context "'.")
+             "You don't have permission to access this resource."))
+      
+      (= status-code "401")
+      "Error: Authentication failed. Please check your credentials."
+      
+      status-code
+      (str "Error: Failed to perform operation. HTTP status: " status-code)
+      
+      :else
+      (str "Error: " error-msg))))
+
+(defn send-request
+  [{:keys [method url depth headers body user pass]}]
+  (let [req (http/Request. method (dart/Uri.parse url))
+        base (cond-> (basic-auth-headers user pass)
+               depth (assoc "Depth" (str depth)))
+        merged (merge base headers)]
+    (.addAll (.-headers req) merged)
+    (when body
+      (set! (.-body req) body))
+    (-> (.send req)
+        (.then (fn [resp]
+                 (if (and (>= (.-statusCode resp) 200) (< (.-statusCode resp) 300))
+                   (-> (.-stream resp)
+                       (.bytesToString))
+                   (let [status-code (.-statusCode resp)
+                         reason (.-reasonPhrase resp)
+                         error-msg (str "HTTP error: " status-code " " reason)]
+                     (throw (dart/Exception. error-msg)))))))))
